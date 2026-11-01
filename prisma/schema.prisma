@@ -1,0 +1,139 @@
+// AI Business Representative Platform — Prisma schema
+// Two-tier data model:
+//   Tier 1 (operator-readable): User.name, contactMethod, contactValue, feedback
+//   Tier 2 (zero-knowledge vault): VaultEntry.ciphertext + iv — encrypted client-side
+// Even the platform operator (Hashim) cannot read Tier 2 contents.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String   @id @default(cuid())
+
+  // ===== TIER 1: Operator-readable (Hashim can see) =====
+  email         String?  @unique // for login + magic-link fallback
+  name          String?  // user's display name (Hashim can see)
+  contactMethod String   @default("email") // "email" | "phone" | "whatsapp"
+  contactValue  String?  // phone number or email — so Hashim can talk to them
+  feedback      String?  // optional user-submitted feedback
+
+  // ===== Auth (v1: email + passphrase; passkey upgrade later) =====
+  // Server stores ONLY the verifier (salt + derived hash), never the passphrase.
+  authSalt      String?  // per-user random salt for auth hash
+  authVerifier  String?  // derived verifier (PBKDF2 hash of passphrase, server-side check is for auth only)
+  // NOTE: the SAME passphrase is also used client-side to derive the vault key.
+  // The server never sees the vault key — only the verifier for login.
+
+  // ===== Vault crypto metadata (operator sees existence, not contents) =====
+  vaultSalt     String?  // per-user salt for vault key derivation (separate from authSalt)
+  vaultKeyBlob  String?  // vault key encrypted with recovery-code-derived key (Option B recovery)
+  recoverySalt  String?  // salt for recovery code key derivation
+
+  // ===== Status & roles =====
+  status        String   @default("ACTIVE") // ACTIVE | SUSPECTED | SUSPENDED | TERMINATED
+  tier          String   @default("FREE")   // FREE | PRO | ELITE
+  role          String   @default("USER")   // USER | ADMIN
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  vaultEntries  VaultEntry[]
+  sessions      Session[]
+  flagsFiled    MisuseFlag[]  @relation("flaggedUser")
+  flagsRaised   MisuseFlag[]  @relation("flaggedBy")
+  matchedPosts  MarketplacePost[] @relation("matchedCreator")
+}
+
+model VaultEntry {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Encrypted with user's vault key (AES-GCM, client-side).
+  // Server stores only ciphertext + IV. Never decrypted server-side.
+  ciphertext  String   // base64
+  iv          String   // base64
+
+  // Operator-visible metadata (structure only, never contents)
+  entryType   String   // "skill" | "pricing" | "portfolio" | "note" | "apikey"
+  label       String   // user-supplied short label (e.g. "Next.js", "Hourly floor", "X API key") — stored in plaintext so admin panel can show structure. Sensitive VALUE stays encrypted.
+  sortIndex   Int      @default(0)
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([userId, entryType])
+}
+
+model Session {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  token       String   @unique // 32-byte hex
+  expiresAt   DateTime
+  createdAt   DateTime @default(now())
+
+  @@index([userId])
+}
+
+model MisuseFlag {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation("flaggedUser", fields: [userId], references: [id], onDelete: Cascade)
+  raisedById  String?
+  raisedBy    User?    @relation("flaggedBy", fields: [raisedById], references: [id])
+
+  reason      String   // short reason code: "spam_outreach" | "fraud_signal" | "tos_violation" | "manual_review"
+  severity    String   @default("LOW") // LOW | MEDIUM | HIGH
+  status      String   @default("OPEN") // OPEN | REVIEWED | RESOLVED | DISMISSED
+  context     String?  // JSON-encoded details
+
+  createdAt   DateTime @default(now())
+
+  @@index([userId])
+  @@index([status])
+}
+
+model MarketplacePost {
+  // Layer 1: inbound marketplace where clients post project briefs.
+  id              String   @id @default(cuid())
+  clientName      String?
+  clientContact   String   // phone or email — so the matched creator can reach them
+  brief           String   // what they need
+  budget          String?
+  timeline        String?
+  requiredSkills  String?  // comma-separated tags for AI matching
+
+  status          String   @default("OPEN") // OPEN | MATCHED | CLOSED
+  matchedUserId   String?
+  matchedUser     User?    @relation("matchedCreator", fields: [matchedUserId], references: [id])
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([status])
+}
+
+model LeadCache {
+  // Aggregated leads from Layer 2 free sources (HN, RSS, etc.)
+  id          String   @id @default(cuid())
+  source      String   // "hn" | "rss_weworkremotely" | etc.
+  externalId  String   // unique ID from the source
+  title       String
+  body        String
+  url         String
+  author      String?
+  postedAt    DateTime
+  fetchedAt   DateTime @default(now())
+
+  status      String   @default("NEW") // NEW | QUALIFIED | ARCHIVED | DRAFTED
+
+  @@unique([source, externalId])
+  @@index([source, status])
+}
