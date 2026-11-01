@@ -21,7 +21,7 @@ const crimson = Crimson_Pro({
 });
 
 export const metadata: Metadata = {
-  title: "Habibi.AI — Zero-knowledge AI business representative",
+  title: "Krypta — Zero-knowledge AI business representative",
   description: "An autonomous client-hunting network where independent developers and creators store their skills, pricing, and portfolio behind end-to-end encryption.",
   keywords: ["AI representative", "freelance leads", "zero-knowledge vault", "creator platform", "Hashim"],
   authors: [{ name: "Hashim" }],

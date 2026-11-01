@@ -35,6 +35,13 @@ export async function POST(req: NextRequest) {
       )
     }
 
+    // Early adopter logic: first 10 users get 28% fee rate locked for life.
+    // User #11+ get 35% fee rate locked for life.
+    // The rate never changes for a given user after signup (see TERMS.md §2).
+    const existingCount = await db.user.count()
+    const isEarlyAdopter = existingCount < 10
+    const feeRateLocked = isEarlyAdopter ? 0.28 : 0.35
+
     const user = await db.user.create({
       data: {
         email: normalizedEmail,
@@ -46,12 +53,18 @@ export async function POST(req: NextRequest) {
         role: 'USER',
         tier: 'FREE',
         status: 'ACTIVE',
+        isEarlyAdopter,
+        feeRateLocked,
       },
     })
 
+    // Create empty wallet for the user (ledger — not a real payment account)
+    await db.wallet.create({
+      data: { userId: user.id },
+    })
+
     // First signed-up user becomes ADMIN (Hashim on first install)
-    const userCount = await db.user.count()
-    if (userCount === 1) {
+    if (existingCount === 0) {
       await db.user.update({
         where: { id: user.id },
         data: { role: 'ADMIN', tier: 'ELITE' },

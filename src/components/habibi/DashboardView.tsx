@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Button } from '@/components/ui/button'
-import { LogOut, Shield, User, Lock, Megaphone, Globe, Sparkles, Compass } from 'lucide-react'
+import { LogOut, Shield, User, Lock, Megaphone, Globe, Sparkles, Compass, Wallet } from 'lucide-react'
 import type { SessionUserDTO, DashboardTab } from './types'
 import { ProfileForm } from './ProfileForm'
 import { VaultEditor } from './VaultEditor'
@@ -11,6 +11,7 @@ import { LeadsView } from './LeadsView'
 import { AdminPanel } from './AdminPanel'
 import { MarketplaceView } from './MarketplaceView'
 import { GuideAI } from './GuideAI'
+import { WalletView } from './WalletView'
 
 interface Props {
   user: SessionUserDTO
@@ -21,10 +22,6 @@ interface Props {
 export function DashboardView({ user, vaultKey, onLogout }: Props) {
   const [tab, setTab] = useState<DashboardTab | 'guide' | 'admin'>('guide')
 
-  useEffect(() => {
-    // Default to Guide tab — most useful for new users
-  }, [])
-
   return (
     <div className="relative min-h-screen flex flex-col">
       <div className="cosmic-bg" />
@@ -34,7 +31,7 @@ export function DashboardView({ user, vaultKey, onLogout }: Props) {
         <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-baseline gap-3">
             <div className="font-serif text-xl text-foreground tracking-tight">
-              Habibi<span className="text-accent">.</span>AI
+              Krypta<span className="text-accent">.</span>
             </div>
             <span className="text-xs text-stone-500 hidden sm:inline">
               · {user.name || user.email}
@@ -73,6 +70,9 @@ export function DashboardView({ user, vaultKey, onLogout }: Props) {
               <TabsTrigger value="vault" className="rounded-none data-[state=active]:bg-stone-900 data-[state=active]:text-stone-50">
                 <Lock className="w-3 h-3 mr-2" /> Vault
               </TabsTrigger>
+              <TabsTrigger value="wallet" className="rounded-none data-[state=active]:bg-stone-900 data-[state=active]:text-stone-50">
+                <Wallet className="w-3 h-3 mr-2" /> Wallet
+              </TabsTrigger>
               <TabsTrigger value="leads" className="rounded-none data-[state=active]:bg-stone-900 data-[state=active]:text-stone-50">
                 <Globe className="w-3 h-3 mr-2" /> Leads
               </TabsTrigger>
@@ -96,6 +96,10 @@ export function DashboardView({ user, vaultKey, onLogout }: Props) {
               <VaultEditor vaultKey={vaultKey} />
             </TabsContent>
 
+            <TabsContent value="wallet">
+              <WalletView vaultKey={vaultKey} />
+            </TabsContent>
+
             <TabsContent value="leads">
               <LeadsView vaultKey={vaultKey} />
             </TabsContent>
@@ -113,7 +117,7 @@ export function DashboardView({ user, vaultKey, onLogout }: Props) {
 
       <footer className="border-t border-stone-300/60 bg-stone-50/80 px-6 py-4 relative z-10">
         <div className="max-w-6xl mx-auto text-xs text-stone-500 flex flex-wrap items-center justify-between gap-2">
-          <span>Operator: Hashim · Billing off-platform · Misuse handled personally</span>
+          <span>Operator: Hashim · Billing off-platform · Misuse handled personally · Fee rate locked at signup</span>
           <span>Tier: {user.tier} · Status: {user.status}</span>
         </div>
       </footer>

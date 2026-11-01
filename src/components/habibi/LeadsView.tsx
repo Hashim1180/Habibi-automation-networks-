@@ -220,22 +220,66 @@ export function LeadsView({ vaultKey }: Props) {
             )}
 
             {draft && (
-              <div className="space-y-2">
-                <div>
-                  <div className="text-xs text-stone-500 mb-1">Subject:</div>
-                  <div className="rounded-md bg-white border border-stone-200 p-2 text-sm font-medium text-stone-900">
-                    {draft.subject}
+              <div className="space-y-3">
+                {/* Fit score + fraud risk banner */}
+                {draft.fit_score !== undefined && (
+                  <div className={`p-3 rounded border ${
+                    draft.fit
+                      ? 'bg-emerald-50 border-emerald-200 text-emerald-900'
+                      : 'bg-red-50 border-red-200 text-red-900'
+                  }`}>
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="font-medium text-sm">
+                        {draft.fit ? `Fit score: ${draft.fit_score}/100` : `Refused · fit ${draft.fit_score}/100`}
+                      </span>
+                      {draft.fraud_risk && (
+                        <span className="text-xs px-2 py-0.5 bg-red-200 text-red-900 rounded uppercase tracking-wide">
+                          Fraud risk
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-xs">{draft.fit_assessment}</p>
+                    {draft.fraud_signals && draft.fraud_signals.length > 0 && (
+                      <ul className="text-xs mt-2 space-y-1">
+                        {draft.fraud_signals.map((s: any, i: number) => (
+                          <li key={i} className="flex gap-2">
+                            <span className={`px-1 rounded text-[10px] uppercase ${
+                              s.severity === 'HIGH' ? 'bg-red-300 text-red-900' :
+                              s.severity === 'MEDIUM' ? 'bg-amber-200 text-amber-900' :
+                              'bg-stone-200 text-stone-700'
+                            }`}>{s.severity}</span>
+                            <span>{s.reason}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
                   </div>
-                </div>
-                <div>
-                  <div className="text-xs text-stone-500 mb-1">Body:</div>
-                  <pre className="rounded-md bg-white border border-stone-200 p-3 text-sm text-stone-700 whitespace-pre-wrap font-sans">
-                    {draft.body}
-                  </pre>
-                </div>
-                <div className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-md p-2">
-                  {draft.note}
-                </div>
+                )}
+
+                {/* Draft body (only if fit was good enough) */}
+                {draft.draft === null ? (
+                  <div className="rounded-md bg-stone-100 border border-stone-300 p-4 text-sm text-stone-700">
+                    <strong>No draft generated.</strong> {draft.note}
+                  </div>
+                ) : (
+                  <>
+                    <div>
+                      <div className="text-xs text-stone-500 mb-1">Subject:</div>
+                      <div className="rounded-md bg-white border border-stone-200 p-2 text-sm font-medium text-stone-900">
+                        {draft.subject}
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-xs text-stone-500 mb-1">Body:</div>
+                      <pre className="rounded-md bg-white border border-stone-200 p-3 text-sm text-stone-700 whitespace-pre-wrap font-sans">
+                        {draft.body}
+                      </pre>
+                    </div>
+                    <div className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-md p-2">
+                      {draft.note}
+                    </div>
+                  </>
+                )}
               </div>
             )}
           </CardContent>

@@ -16,12 +16,14 @@ export function LandingView({ onSignup, onLogin }: Props) {
       {/* Top nav — minimal editorial */}
       <header className="px-8 py-6 flex items-center justify-between relative z-10">
         <div className="font-serif text-xl tracking-tight text-foreground">
-          Habibi<span className="text-accent">.</span>AI
+          Krypta<span className="text-accent">.</span>
         </div>
         <nav className="hidden md:flex items-center gap-8 text-sm text-stone-600">
           <a href="#architecture" className="editorial-link">Architecture</a>
+          <a href="#fee" className="editorial-link">Fee</a>
           <a href="#sources" className="editorial-link">Sources</a>
           <a href="#operator" className="editorial-link">Operator</a>
+          <a href="/download/TERMS.md" target="_blank" className="editorial-link">Terms</a>
         </nav>
         <div className="flex gap-3">
           <Button variant="ghost" size="sm" onClick={onLogin} className="text-stone-700 hover:text-foreground">
@@ -40,9 +42,9 @@ export function LandingView({ onSignup, onLogin }: Props) {
             <span className="w-8 h-px bg-stone-400" />
             <span>Operator · Hashim</span>
             <span className="w-1 h-1 rounded-full bg-accent" />
-            <span>Universal coverage</span>
+            <span>First 10 users · 28% fee locked for life</span>
             <span className="w-1 h-1 rounded-full bg-accent" />
-            <span>Zero-knowledge</span>
+            <span>Zero-knowledge vault</span>
           </div>
 
           <h1 className="font-serif text-5xl md:text-7xl lg:text-8xl leading-[0.95] text-foreground mb-8 max-w-5xl">
@@ -108,6 +110,65 @@ export function LandingView({ onSignup, onLogin }: Props) {
               detail="No payment processing on the platform. No middleman fees."
             />
           </div>
+        </div>
+      </section>
+
+      {/* Fee structure strip */}
+      <section id="fee" className="border-t border-stone-300/60 px-8 py-20 relative z-10">
+        <div className="max-w-6xl mx-auto">
+          <div className="mb-12 flex items-center gap-3 text-xs uppercase tracking-[0.2em] text-stone-500">
+            <span className="w-8 h-px bg-stone-400" />
+            <span>Platform fee · locked at signup</span>
+          </div>
+          <h2 className="font-serif text-4xl md:text-5xl mb-12 leading-tight text-foreground">
+            First <em className="text-accent not-italic">10 users</em> pay 28%.<br />
+            <span className="italic">Everyone after pays 35%.</span>
+          </h2>
+
+          <div className="grid md:grid-cols-2 gap-8">
+            <div className="border border-stone-300 p-6 bg-white">
+              <div className="text-xs uppercase tracking-[0.2em] text-accent mb-2">Early Adopter · 28%</div>
+              <div className="font-serif text-5xl mb-3 text-foreground">28<span className="text-2xl">%</span></div>
+              <p className="text-sm text-stone-700 leading-relaxed">
+                Locked at signup for the first 10 users. Never increases, regardless of how large the platform grows.
+                Covers API usage, VPS hosting, ads, and operator support — at a rate that rewards you for taking a chance on an unproven platform.
+              </p>
+              <div className="mt-4 text-xs text-stone-500 font-mono">
+                $100 withdrawn → $28 fee → $72 to you
+              </div>
+            </div>
+            <div className="border border-stone-300 p-6 bg-white">
+              <div className="text-xs uppercase tracking-[0.2em] text-stone-500 mb-2">Standard · 35%</div>
+              <div className="font-serif text-5xl mb-3 text-foreground">35<span className="text-2xl">%</span></div>
+              <p className="text-sm text-stone-700 leading-relaxed">
+                Locked at signup for users 11 onward. Never increases. Funds API usage, hosting, advertising for creator acquisition, and the personal-support model.
+                Higher than typical freelance platforms — because the operator handles misuse personally and the AI does honest fit-matching instead of letting anyone bid on anything.
+              </p>
+              <div className="mt-4 text-xs text-stone-500 font-mono">
+                $100 withdrawn → $35 fee → $65 to you
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-12 grid md:grid-cols-3 gap-6 text-sm">
+            <div>
+              <div className="text-xs uppercase tracking-wide text-stone-500 mb-2">Pakistan withdrawals</div>
+              <div className="text-stone-800">JazzCash · EasyPaisa · NayaPay · Bank wire</div>
+            </div>
+            <div>
+              <div className="text-xs uppercase tracking-wide text-stone-500 mb-2">India withdrawals</div>
+              <div className="text-stone-800">Paytm · UPI · Bank wire</div>
+            </div>
+            <div>
+              <div className="text-xs uppercase tracking-wide text-stone-500 mb-2">International withdrawals</div>
+              <div className="text-stone-800">PayPal · Bank wire/ACH · Other (case-by-case)</div>
+            </div>
+          </div>
+
+          <p className="mt-12 text-xs text-stone-500">
+            Fee applies only on withdrawals — never on deposits. Minimum withdrawal: $20 USD.
+            Full terms in <a href="/download/TERMS.md" target="_blank" className="text-accent underline editorial-link">TERMS.md</a>.
+          </p>
         </div>
       </section>
 
@@ -178,7 +239,7 @@ export function LandingView({ onSignup, onLogin }: Props) {
 
       <footer className="border-t border-stone-300/60 px-8 py-8 relative z-10">
         <div className="max-w-6xl mx-auto flex flex-wrap items-center justify-between gap-4 text-xs text-stone-500">
-          <span className="font-serif text-base text-stone-700">Habibi<span className="text-accent">.</span>AI</span>
+          <span className="font-serif text-base text-stone-700">Krypta<span className="text-accent">.</span></span>
           <span>Privacy by architecture, not by promise · Operator: Hashim</span>
           <span>Built on Next.js · Web Crypto · GLM-4.6</span>
         </div>

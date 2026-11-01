@@ -40,6 +40,12 @@ model User {
   tier          String   @default("FREE")   // FREE | PRO | ELITE
   role          String   @default("USER")   // USER | ADMIN
 
+  // ===== Wallet / commission =====
+  // Early adopter flag is LOCKED at signup based on user count.
+  // First 10 users get 28% fee rate for life; everyone else gets 35%.
+  isEarlyAdopter Boolean  @default(false)
+  feeRateLocked  Float    @default(0.35) // locked at signup — never changes for this user
+
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
@@ -48,6 +54,8 @@ model User {
   flagsFiled    MisuseFlag[]  @relation("flaggedUser")
   flagsRaised   MisuseFlag[]  @relation("flaggedBy")
   matchedPosts  MarketplacePost[] @relation("matchedCreator")
+  wallet        Wallet?
+  withdrawalRequests WithdrawalRequest[]
 }
 
 model VaultEntry {
@@ -136,4 +144,89 @@ model LeadCache {
 
   @@unique([source, externalId])
   @@index([source, status])
+}
+
+// ===== Wallet / Ledger =====
+// Krypta is a ledger, not a payment processor. The wallet tracks earnings
+// from completed milestones and processes withdrawal requests. All real
+// money movement happens off-platform, fulfilled manually by Hashim via
+// the user's chosen withdrawal method (JazzCash, EasyPaisa, NayaPay, Paytm,
+// PayPal, bank wire, etc.).
+
+model Wallet {
+  id              String   @id @default(cuid())
+  userId          String   @unique
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // All amounts stored in integer cents to avoid float precision issues.
+  // Display in USD (or local equivalent at withdrawal time).
+  balanceCents           Int @default(0)
+  lifetimeEarningsCents  Int @default(0)
+  lifetimeFeesCents      Int @default(0)
+  lifetimeWithdrawnCents Int @default(0)
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  transactions    Transaction[]
+}
+
+model Transaction {
+  id              String   @id @default(cuid())
+  walletId        String
+  wallet          Wallet   @relation(fields: [walletId], references: [id], onDelete: Cascade)
+  userId          String   // denormalized for easy querying
+
+  type            String   // "deposit" | "withdrawal" | "fee" | "adjustment"
+  // deposit: positive (earnings added to wallet)
+  // withdrawal: negative (gross amount leaving on user request)
+  // fee: negative (operator cut deducted at withdrawal)
+  // adjustment: signed (manual correction by Hashim)
+
+  amountCents     Int      // signed: + for credits, - for debits
+  description     String?
+
+  // For deposits: reference to the project / milestone
+  projectRef      String?
+
+  // For withdrawals: link to the WithdrawalRequest
+  withdrawalRequestId String?
+
+  status          String   @default("COMPLETED") // PENDING | COMPLETED | FAILED | REVERSED
+
+  createdAt       DateTime @default(now())
+
+  @@index([walletId, createdAt])
+  @@index([userId, type])
+}
+
+model WithdrawalRequest {
+  id              String   @id @default(cuid())
+  userId          String
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Amounts in integer cents (USD at request time)
+  grossCents      Int      // amount user requested
+  feeCents        Int      // operator cut (28% or 35% of gross)
+  netCents        Int      // amount user will receive (gross - fee)
+
+  feeRate         Float    // snapshot of feeRateLocked at request time
+  isEarlyAdopter  Boolean  // snapshot of early-adopter status
+
+  // Withdrawal method — stored as methodType + label (visible to operator).
+  // The full method details (phone, account number, etc.) live encrypted
+  // in the user's VaultEntry with entryType="withdrawal_method".
+  // Hashim contacts the user to confirm full details before payout.
+  methodType      String   // "jazzcash" | "easypaisa" | "nayapay" | "paytm" | "upi" | "paypal" | "bank" | "other"
+  methodLabel     String   // human-readable, e.g. "JazzCash +92 300 1234567"
+  methodVaultEntryId String? // reference to the VaultEntry containing the encrypted details
+
+  status          String   @default("PENDING") // PENDING | APPROVED | REJECTED | PAID | FAILED
+  adminNotes      String?
+  processedAt     DateTime?
+
+  createdAt       DateTime @default(now())
+
+  @@index([status])
+  @@index([userId])
 }
