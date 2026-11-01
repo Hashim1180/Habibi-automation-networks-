@@ -4,7 +4,6 @@ import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Textarea } from '@/components/ui/textarea'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { ArrowLeft, KeyRound, Loader2, ShieldCheck } from 'lucide-react'
 import {
@@ -53,29 +52,18 @@ export function SignupView({ onBack, onSignedUp }: Props) {
 
     setBusy(true)
     try {
-      // 1. Generate salts (one for auth, one for vault, one for recovery)
       const authSalt = generateAuthSalt()
       const vaultSalt = generateVaultSalt()
       const recoverySalt = generateRecoverySalt()
 
-      // 2. Generate the recovery code (Option B — shown once)
       const code = generateRecoveryCode()
       setRecoveryCode(code)
 
-      // 3. Derive auth verifier (sent to server — server compares for login)
       const authVerifier = await deriveAuthVerifier(passphrase, authSalt)
-
-      // 4. Derive vault key (stays in browser, encrypts vault entries)
       const vaultKey = await deriveVaultKey(passphrase, vaultSalt)
-
-      // 5. Derive recovery key from recovery code + recoverySalt
       const recoveryKey = await deriveRecoveryKey(code, recoverySalt)
-
-      // 6. Encrypt the vault key with the recovery key → blob stored on server
-      //    If user loses passphrase, they enter recovery code → vault key recovered.
       const vaultKeyBlob = await encryptVaultKeyForRecovery(vaultKey, recoveryKey)
 
-      // 7. POST to /api/auth/signup — passphrase NEVER sent
       const res = await fetch('/api/auth/signup', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -95,7 +83,6 @@ export function SignupView({ onBack, onSignedUp }: Props) {
         return
       }
       const data = await res.json()
-      // Stash user + vault key for the post-acknowledgment handoff
       setPendingUser(data.user)
       setPendingVaultKey(vaultKey)
     } catch (e) {
@@ -113,35 +100,51 @@ export function SignupView({ onBack, onSignedUp }: Props) {
 
   if (recoveryCode) {
     return (
-      <RecoveryCodeDisplay
-        code={recoveryCode}
-        onAcknowledge={handleAcknowledged}
-      />
+      <div className="relative min-h-screen flex items-center justify-center px-6 py-12">
+        <div className="cosmic-bg" />
+        <div className="cosmic-grain" />
+        <Card className="w-full max-w-lg border-stone-300 shadow-md relative z-10 rounded-none">
+          <CardHeader className="text-center">
+            <div className="font-serif text-accent text-xs uppercase tracking-[0.2em] mb-2">One-time display</div>
+            <CardTitle className="font-serif text-3xl text-foreground">Save your recovery code</CardTitle>
+            <CardDescription className="text-stone-700 max-w-sm mx-auto">
+              This is the <strong>only</strong> way to recover your vault if you lose your passphrase.
+              We do not have it. Lose this and your vault is gone forever.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="bg-stone-900 text-stone-50 p-6 text-center">
+              <code className="font-mono text-xl tracking-[0.15em] select-all block">
+                {recoveryCode}
+              </code>
+            </div>
+            <p className="text-sm text-stone-700 text-center">
+              Write it down. Print it. Store it in a password manager. Do not lose it.
+              The code is shown <strong>only this once</strong>.
+            </p>
+            <RecoveryCheckbox onAcknowledge={handleAcknowledged} />
+          </CardContent>
+        </Card>
+      </div>
     )
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-6 py-12 bg-stone-50">
-      <div className="w-full max-w-md">
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={onBack}
-          className="mb-4 text-stone-500"
-        >
+    <div className="relative min-h-screen flex items-center justify-center px-6 py-12">
+      <div className="cosmic-bg" />
+      <div className="cosmic-grain" />
+      <div className="w-full max-w-md relative z-10">
+        <Button variant="ghost" size="sm" onClick={onBack} className="mb-4 text-stone-600">
           <ArrowLeft className="w-4 h-4 mr-2" /> Back
         </Button>
 
-        <Card className="border-stone-200 shadow-sm">
+        <Card className="border-stone-300 rounded-none">
           <CardHeader>
-            <div className="flex items-center gap-2 mb-2">
-              <KeyRound className="w-5 h-5 text-amber-700" />
-              <span className="text-xs uppercase tracking-wide text-stone-500">Create your vault</span>
-            </div>
-            <CardTitle className="font-serif text-2xl text-stone-900">Sign up</CardTitle>
-            <CardDescription className="text-stone-600">
+            <div className="font-serif text-accent text-xs uppercase tracking-[0.2em] mb-2">Create your vault</div>
+            <CardTitle className="font-serif text-3xl text-foreground">Sign up</CardTitle>
+            <CardDescription className="text-stone-700">
               Your passphrase encrypts your entire vault. We never see it.
-              Lose it and your only recovery path is the backup code we'll show you next.
+              Lose it and your only recovery path is the backup code we&apos;ll show you next.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -156,6 +159,7 @@ export function SignupView({ onBack, onSignedUp }: Props) {
                   placeholder="you@domain.com"
                   required
                   autoComplete="email"
+                  className="rounded-none"
                 />
               </div>
 
@@ -169,6 +173,7 @@ export function SignupView({ onBack, onSignedUp }: Props) {
                   placeholder="At least 12 characters"
                   required
                   autoComplete="new-password"
+                  className="rounded-none"
                 />
                 <p className="text-xs text-stone-500">
                   This single passphrase encrypts your vault. We store only a verifier — never the passphrase itself.
@@ -185,11 +190,12 @@ export function SignupView({ onBack, onSignedUp }: Props) {
                   placeholder="Type it again"
                   required
                   autoComplete="new-password"
+                  className="rounded-none"
                 />
               </div>
 
               {error && (
-                <div className="text-sm text-red-700 bg-red-50 border border-red-200 rounded-md p-3">
+                <div className="text-sm text-red-700 bg-red-50 border border-red-200 p-3">
                   {error}
                 </div>
               )}
@@ -197,7 +203,7 @@ export function SignupView({ onBack, onSignedUp }: Props) {
               <Button
                 type="submit"
                 disabled={busy}
-                className="w-full bg-amber-700 hover:bg-amber-800 text-amber-50"
+                className="w-full bg-stone-900 hover:bg-stone-800 text-stone-50 rounded-none"
               >
                 {busy ? (
                   <>
@@ -217,50 +223,26 @@ export function SignupView({ onBack, onSignedUp }: Props) {
   )
 }
 
-function RecoveryCodeDisplay({ code, onAcknowledge }: { code: string; onAcknowledge: () => void }) {
+function RecoveryCheckbox({ onAcknowledge }: { onAcknowledge: () => void }) {
   const [saved, setSaved] = useState(false)
   return (
-    <div className="min-h-screen flex items-center justify-center px-6 py-12 bg-stone-50">
-      <Card className="w-full max-w-lg border-amber-300 shadow-md">
-        <CardHeader>
-          <div className="flex items-center gap-2 mb-2">
-            <KeyRound className="w-5 h-5 text-amber-700" />
-            <span className="text-xs uppercase tracking-wide text-amber-700">One-time display</span>
-          </div>
-          <CardTitle className="font-serif text-2xl text-stone-900">Save your recovery code</CardTitle>
-          <CardDescription>
-            This is the <strong>only</strong> way to recover your vault if you lose your passphrase.
-            We do not have it. There is no other recovery path. Lose this and your vault is gone forever.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="rounded-md bg-amber-50 border border-amber-200 p-4">
-            <code className="block text-center text-xl font-mono text-amber-900 tracking-wider select-all">
-              {code}
-            </code>
-          </div>
-          <p className="text-sm text-stone-600">
-            Write it down. Print it. Store it in a password manager. Do not lose it.
-            The code is shown <strong>only this once</strong>.
-          </p>
-          <label className="flex items-start gap-2 text-sm text-stone-700">
-            <input
-              type="checkbox"
-              checked={saved}
-              onChange={(e) => setSaved(e.target.checked)}
-              className="mt-0.5"
-            />
-            <span>I have saved this recovery code in a secure location.</span>
-          </label>
-          <Button
-            disabled={!saved}
-            onClick={onAcknowledge}
-            className="w-full bg-amber-700 hover:bg-amber-800 text-amber-50"
-          >
-            Continue to dashboard
-          </Button>
-        </CardContent>
-      </Card>
-    </div>
+    <>
+      <label className="flex items-start gap-2 text-sm text-stone-700 justify-center">
+        <input
+          type="checkbox"
+          checked={saved}
+          onChange={(e) => setSaved(e.target.checked)}
+          className="mt-0.5"
+        />
+        <span>I have saved this recovery code in a secure location.</span>
+      </label>
+      <Button
+        disabled={!saved}
+        onClick={onAcknowledge}
+        className="w-full bg-stone-900 hover:bg-stone-800 text-stone-50 rounded-none"
+      >
+        Continue to dashboard →
+      </Button>
+    </>
   )
 }

@@ -11,6 +11,7 @@ export type DashboardTab =
   | 'keys'
   | 'leads'
   | 'rep'
+  | 'guide'
   | 'marketplace'
 
 export interface VaultEntryDTO {

@@ -3,13 +3,14 @@
 import { useEffect, useState } from 'react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Button } from '@/components/ui/button'
-import { LogOut, Shield, User, Lock, Megaphone, Globe, Sparkles } from 'lucide-react'
-import type { SessionUserDTO, VaultEntryDTO, DashboardTab } from './types'
+import { LogOut, Shield, User, Lock, Megaphone, Globe, Sparkles, Compass } from 'lucide-react'
+import type { SessionUserDTO, DashboardTab } from './types'
 import { ProfileForm } from './ProfileForm'
 import { VaultEditor } from './VaultEditor'
 import { LeadsView } from './LeadsView'
 import { AdminPanel } from './AdminPanel'
 import { MarketplaceView } from './MarketplaceView'
+import { GuideAI } from './GuideAI'
 
 interface Props {
   user: SessionUserDTO
@@ -18,68 +19,74 @@ interface Props {
 }
 
 export function DashboardView({ user, vaultKey, onLogout }: Props) {
-  const [tab, setTab] = useState<DashboardTab>('profile')
-  const [vaultEntries, setVaultEntries] = useState<VaultEntryDTO[]>([])
+  const [tab, setTab] = useState<DashboardTab | 'guide' | 'admin'>('guide')
 
   useEffect(() => {
-    fetch('/api/vault')
-      .then((r) => r.json())
-      .then((d) => setVaultEntries(d.entries || []))
-      .catch(() => {})
-  }, [tab === 'vault' ? 'vault' : 'none']) // refresh vault entries when entering vault tab
+    // Default to Guide tab — most useful for new users
+  }, [])
 
   return (
-    <div className="min-h-screen flex flex-col">
-      <header className="border-b border-stone-200 bg-white sticky top-0 z-10">
-        <div className="max-w-6xl mx-auto px-6 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="font-serif text-stone-900">
-              Habibi<span className="text-amber-700">.</span>AI
+    <div className="relative min-h-screen flex flex-col">
+      <div className="cosmic-bg" />
+      <div className="cosmic-grain" />
+
+      <header className="border-b border-stone-300/60 bg-stone-50/80 backdrop-blur-sm sticky top-0 z-20">
+        <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
+          <div className="flex items-baseline gap-3">
+            <div className="font-serif text-xl text-foreground tracking-tight">
+              Habibi<span className="text-accent">.</span>AI
             </div>
             <span className="text-xs text-stone-500 hidden sm:inline">
-              Welcome, {user.name || user.email}
+              · {user.name || user.email}
             </span>
           </div>
           <div className="flex items-center gap-2">
             {user.role === 'ADMIN' && (
               <Button
                 size="sm"
-                variant={tab === ('admin' as DashboardTab) ? 'default' : 'ghost'}
-                onClick={() => setTab('admin' as DashboardTab)}
-                className={tab === ('admin' as DashboardTab) ? 'bg-amber-700 text-amber-50' : 'text-stone-700'}
+                variant={tab === 'admin' ? 'default' : 'ghost'}
+                onClick={() => setTab('admin')}
+                className={tab === 'admin' ? 'bg-stone-900 text-stone-50 rounded-none' : 'text-stone-700 rounded-none'}
               >
                 <Shield className="w-3 h-3 mr-1" /> Admin
               </Button>
             )}
-            <Button size="sm" variant="ghost" onClick={onLogout} className="text-stone-600">
+            <Button size="sm" variant="ghost" onClick={onLogout} className="text-stone-600 rounded-none">
               <LogOut className="w-3 h-3 mr-1" /> Log out
             </Button>
           </div>
         </div>
       </header>
 
-      <main className="flex-1 max-w-6xl w-full mx-auto px-6 py-6">
-        {tab === ('admin' as DashboardTab) && user.role === 'ADMIN' ? (
+      <main className="flex-1 max-w-6xl w-full mx-auto px-6 py-8 relative z-10">
+        {tab === 'admin' && user.role === 'ADMIN' ? (
           <AdminPanel />
         ) : (
-          <Tabs value={tab} onValueChange={(v) => setTab(v as DashboardTab)}>
-            <TabsList className="flex flex-wrap h-auto bg-stone-100 mb-6">
-              <TabsTrigger value="profile" className="data-[state=active]:bg-amber-700 data-[state=active]:text-amber-50">
-                <User className="w-3 h-3 mr-1" /> Profile
+          <Tabs value={tab} onValueChange={(v) => setTab(v as DashboardTab | 'guide' | 'admin')}>
+            <TabsList className="flex flex-wrap h-auto bg-stone-100 mb-8 rounded-none p-1">
+              <TabsTrigger value="guide" className="rounded-none data-[state=active]:bg-stone-900 data-[state=active]:text-stone-50">
+                <Compass className="w-3 h-3 mr-2" /> Guide AI
               </TabsTrigger>
-              <TabsTrigger value="vault" className="data-[state=active]:bg-amber-700 data-[state=active]:text-amber-50">
-                <Lock className="w-3 h-3 mr-1" /> Vault
+              <TabsTrigger value="profile" className="rounded-none data-[state=active]:bg-stone-900 data-[state=active]:text-stone-50">
+                <User className="w-3 h-3 mr-2" /> Profile
               </TabsTrigger>
-              <TabsTrigger value="leads" className="data-[state=active]:bg-amber-700 data-[state=active]:text-amber-50">
-                <Globe className="w-3 h-3 mr-1" /> Leads
+              <TabsTrigger value="vault" className="rounded-none data-[state=active]:bg-stone-900 data-[state=active]:text-stone-50">
+                <Lock className="w-3 h-3 mr-2" /> Vault
               </TabsTrigger>
-              <TabsTrigger value="rep" className="data-[state=active]:bg-amber-700 data-[state=active]:text-amber-50">
-                <Sparkles className="w-3 h-3 mr-1" /> AI Rep
+              <TabsTrigger value="leads" className="rounded-none data-[state=active]:bg-stone-900 data-[state=active]:text-stone-50">
+                <Globe className="w-3 h-3 mr-2" /> Leads
               </TabsTrigger>
-              <TabsTrigger value="marketplace" className="data-[state=active]:bg-amber-700 data-[state=active]:text-amber-50">
-                <Megaphone className="w-3 h-3 mr-1" /> Marketplace
+              <TabsTrigger value="rep" className="rounded-none data-[state=active]:bg-stone-900 data-[state=active]:text-stone-50">
+                <Sparkles className="w-3 h-3 mr-2" /> AI Rep
+              </TabsTrigger>
+              <TabsTrigger value="marketplace" className="rounded-none data-[state=active]:bg-stone-900 data-[state=active]:text-stone-50">
+                <Megaphone className="w-3 h-3 mr-2" /> Marketplace
               </TabsTrigger>
             </TabsList>
+
+            <TabsContent value="guide">
+              <GuideAI vaultKey={vaultKey} />
+            </TabsContent>
 
             <TabsContent value="profile">
               <ProfileForm />
@@ -90,11 +97,11 @@ export function DashboardView({ user, vaultKey, onLogout }: Props) {
             </TabsContent>
 
             <TabsContent value="leads">
-              <LeadsView vaultKey={vaultKey} vaultEntries={vaultEntries} />
+              <LeadsView vaultKey={vaultKey} />
             </TabsContent>
 
             <TabsContent value="rep">
-              <LeadsView vaultKey={vaultKey} vaultEntries={vaultEntries} />
+              <LeadsView vaultKey={vaultKey} />
             </TabsContent>
 
             <TabsContent value="marketplace">
@@ -104,9 +111,9 @@ export function DashboardView({ user, vaultKey, onLogout }: Props) {
         )}
       </main>
 
-      <footer className="border-t border-stone-200 bg-stone-50 px-6 py-4">
+      <footer className="border-t border-stone-300/60 bg-stone-50/80 px-6 py-4 relative z-10">
         <div className="max-w-6xl mx-auto text-xs text-stone-500 flex flex-wrap items-center justify-between gap-2">
-          <span>Operator: Hashim · Billing handled off-platform · Misuse handled personally by Hashim</span>
+          <span>Operator: Hashim · Billing off-platform · Misuse handled personally</span>
           <span>Tier: {user.tier} · Status: {user.status}</span>
         </div>
       </footer>
